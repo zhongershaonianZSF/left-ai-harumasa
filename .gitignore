@@ -1,0 +1,13 @@
+# 敏感文件 —— 绝对不能提交到 git（含 API Key）
+.env
+
+# 依赖
+node_modules/
+
+# 日志
+*.log
+npm-debug.log*
+
+# 系统
+.DS_Store
+Thumbs.db

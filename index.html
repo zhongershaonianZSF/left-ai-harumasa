@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>六课斥候请假小助手</title>
+<style>
+  :root{
+    --bg:#0e1420; --bg-2:#131b2b; --panel:#172133; --panel-2:#1e2c44;
+    --line:#27375a; --line-soft:#22314f; --ink:#e8eef7; --ink-dim:#9fb0cc; --ink-faint:#6b7c9c;
+    --amber:#f5b342; --amber-soft:#ffd98a; --teal:#3fd0c9; --teal-soft:#7fe9e4;
+    --red:#ff6b6b; --green:#5fd07a; --purple:#b08bff;
+    --shadow:0 10px 40px rgba(0,0,0,.45); --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+    background:radial-gradient(1200px 600px at 80% -10%,rgba(245,179,66,.07),transparent 60%),radial-gradient(1000px 500px at -10% 110%,rgba(63,208,201,.07),transparent 60%),var(--bg);
+    color:var(--ink);line-height:1.65;min-height:100vh;overflow-x:hidden}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:linear-gradient(rgba(63,208,201,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(63,208,201,.04) 1px,transparent 1px);
+    background-size:42px 42px;mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%)}
+  .mono{font-family:"JetBrains Mono","Consolas","SF Mono",monospace}
+  .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:32px 22px 80px}
+  header{display:flex;align-items:center;gap:16px;margin-bottom:26px;flex-wrap:wrap}
+  .logo{width:54px;height:54px;border-radius:13px;flex:none;background:linear-gradient(135deg,var(--amber),#e08a2b);display:grid;place-items:center;font-size:26px;box-shadow:0 8px 24px rgba(245,179,66,.35)}
+  .titlebox h1{font-size:23px;letter-spacing:.5px;font-weight:800}
+  .titlebox p{color:var(--ink-faint);font-size:13px;margin-top:2px}
+  .badge{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .chip{font-size:11px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);color:var(--ink-dim);background:rgba(255,255,255,.02);letter-spacing:.4px}
+  .chip.live{color:var(--teal);border-color:rgba(63,208,201,.4)}
+  .chip.live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--teal);margin-right:6px;animation:pulse 1.6s infinite;vertical-align:middle}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .grid{display:grid;grid-template-columns:380px 1fr;gap:22px;align-items:start}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  .panel{background:linear-gradient(180deg,var(--panel),var(--bg-2));border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .panel-head{display:flex;align-items:center;gap:9px;padding:15px 18px;border-bottom:1px solid var(--line-soft);background:rgba(255,255,255,.015)}
+  .panel-head .dot{width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)}
+  .panel-head .dot.teal{background:var(--teal);box-shadow:0 0 10px var(--teal)}
+  .panel-head h2{font-size:14px;font-weight:700;letter-spacing:.6px}
+  .panel-head .tag{margin-left:auto;font-size:11px;color:var(--ink-faint)}
+  .panel-body{padding:18px}
+  .field{margin-bottom:15px}
+  .field label{display:block;font-size:12px;color:var(--ink-dim);margin-bottom:6px;letter-spacing:.3px}
+  .field label .req{color:var(--red);margin-left:3px}
+  .field label .hint{color:var(--ink-faint);font-weight:400;margin-left:6px;font-size:11px}
+  .field input,.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;color:var(--ink);padding:10px 12px;font-size:14px;font-family:inherit;outline:none;transition:.18s}
+  .field textarea{resize:vertical;min-height:64px}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(245,179,66,.12)}
+  .field select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%239fb0cc' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--ink-dim);padding:9px 6px;font-size:12.5px;cursor:pointer;transition:.15s;font-family:inherit}
+  .seg button:hover{border-color:var(--amber);color:var(--ink)}
+  .seg button.on{background:linear-gradient(135deg,rgba(245,179,66,.18),rgba(245,179,66,.06));border-color:var(--amber);color:var(--amber-soft);font-weight:600}
+  .actions{display:flex;gap:10px;margin-top:6px}
+  .btn{flex:1;border:none;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.5px;transition:.18s;display:flex;align-items:center;justify-content:center;gap:7px}
+  .btn-primary{background:linear-gradient(135deg,var(--amber),#e08a2b);color:#1a1205;box-shadow:0 6px 18px rgba(245,179,66,.3)}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 9px 24px rgba(245,179,66,.42)}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink-dim)}
+  .btn-ghost:hover{border-color:var(--teal);color:var(--teal-soft)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .ai-status{font-size:11.5px;color:var(--teal);margin-top:10px;text-align:center}
+  .ai-status::before{content:"●";margin-right:5px}
+  .out-empty{text-align:center;padding:60px 20px;color:var(--ink-faint)}
+  .out-empty .ico{font-size:46px;margin-bottom:14px;opacity:.5}
+  .out-empty p{font-size:14px}
+  .out-empty .egg-hint{margin-top:18px;font-size:12px;color:var(--ink-faint);opacity:.7;line-height:1.9}
+  .out-empty .egg-hint code{background:var(--bg);padding:2px 7px;border-radius:5px;border:1px solid var(--line);color:var(--amber-soft);font-size:11.5px}
+  .egg-panel{text-align:center;padding:70px 24px;animation:eggIn .5s ease}
+  @keyframes eggIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+  .egg-panel .big{font-size:64px;margin-bottom:18px}
+  .egg-panel .txt{font-size:26px;font-weight:800;color:var(--amber-soft);letter-spacing:1px}
+  .egg-panel .txt.esc{color:var(--teal-soft);font-family:"JetBrains Mono",monospace}
+  .rec-card{background:linear-gradient(135deg,rgba(245,179,66,.1),rgba(245,179,66,.02));border:1px solid rgba(245,179,66,.35);border-radius:12px;padding:18px;margin-bottom:16px;position:relative;overflow:hidden}
+  .rec-card::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%;background:var(--amber)}
+  .rec-head{display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap}
+  .rec-head .label{font-size:11px;color:var(--amber);letter-spacing:1px;font-weight:700}
+  .type-tag{font-size:11px;padding:3px 9px;border-radius:5px;font-weight:600;letter-spacing:.3px}
+  .type-tag.sick{background:rgba(255,107,107,.15);color:#ff9b9b;border:1px solid rgba(255,107,107,.3)}
+  .type-tag.personal{background:rgba(63,208,201,.15);color:var(--teal-soft);border:1px solid rgba(63,208,201,.3)}
+  .type-tag.family{background:rgba(176,139,255,.15);color:#cdb6ff;border:1px solid rgba(176,139,255,.3)}
+  .type-tag.emergency{background:rgba(245,179,66,.15);color:var(--amber-soft);border:1px solid rgba(245,179,66,.3)}
+  .cred{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink-dim)}
+  .cred-bar{width:54px;height:6px;border-radius:3px;background:var(--bg);overflow:hidden;border:1px solid var(--line)}
+  .cred-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--red),var(--amber),var(--green));transition:width .6s}
+  .src-badge{font-size:10.5px;padding:3px 8px;border-radius:5px;font-weight:600;letter-spacing:.3px;margin-left:auto}
+  .src-badge.ai{background:rgba(63,208,201,.15);color:var(--teal-soft);border:1px solid rgba(63,208,201,.3)}
+  .rec-body{font-size:15.5px;line-height:1.8;color:var(--ink)}
+  .rec-body .typed-cursor{display:inline-block;width:8px;height:16px;background:var(--amber);margin-left:2px;vertical-align:-2px;animation:blink .9s infinite}
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+  .alt-title{font-size:12px;color:var(--ink-faint);letter-spacing:1px;margin:18px 0 10px;font-weight:600}
+  .alt-list{display:flex;flex-direction:column;gap:9px}
+  .alt-item{background:var(--bg);border:1px solid var(--line-soft);border-radius:10px;padding:13px 15px;display:flex;gap:11px;transition:.16s}
+  .alt-item:hover{border-color:var(--teal);background:var(--panel-2)}
+  .alt-num{flex:none;width:22px;height:22px;border-radius:6px;background:var(--panel-2);display:grid;place-items:center;font-size:12px;color:var(--teal);font-weight:700;border:1px solid var(--line)}
+  .alt-text{font-size:13.5px;color:var(--ink-dim);line-height:1.7;flex:1}
+  .alt-text b{color:var(--ink);font-weight:600}
+  .notes{margin-top:16px;background:var(--bg);border:1px dashed var(--line);border-radius:11px;padding:15px 17px}
+  .notes h3{font-size:12px;color:var(--teal);letter-spacing:1px;margin-bottom:11px;font-weight:700;display:flex;align-items:center;gap:7px}
+  .note-row{display:flex;gap:10px;margin-bottom:11px;font-size:13px;line-height:1.7}
+  .note-row:last-child{margin-bottom:0}
+  .note-row .k{flex:none;width:88px;color:var(--ink-faint);font-size:12px}
+  .note-row .v{color:var(--ink-dim);flex:1}
+  .note-row .v b{color:var(--ink);font-weight:600}
+  .out-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .out-actions .btn{flex:none;padding:10px 16px;font-size:13px}
+  .copied{color:var(--green);font-size:12px;align-self:center;animation:eggIn .3s}
+  .err-card{background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.3);border-radius:12px;padding:24px;text-align:center}
+  .err-card .ico{font-size:40px;margin-bottom:12px}
+  .err-card p{color:var(--ink-dim);font-size:14px;margin-bottom:14px;line-height:1.7}
+  .err-card code{background:var(--bg);padding:2px 7px;border-radius:5px;color:var(--amber-soft);font-size:12px}
+  .hist-panel{margin-top:22px}
+  .hist-list{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto}
+  .hist-list::-webkit-scrollbar{width:6px}
+  .hist-list::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+  .hist-item{background:var(--bg);border:1px solid var(--line-soft);border-radius:9px;padding:11px 13px;font-size:12.5px;color:var(--ink-dim);cursor:pointer;transition:.15s}
+  .hist-item:hover{border-color:var(--amber)}
+  .hist-item .ht{display:flex;justify-content:space-between;gap:10px;margin-bottom:4px}
+  .hist-item .ht b{color:var(--amber-soft);font-size:11.5px}
+  .hist-item .ht span{color:var(--ink-faint);font-size:11px}
+  .hist-item .hc{color:var(--ink-dim);font-size:12px;line-height:1.6;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .hist-empty{text-align:center;color:var(--ink-faint);font-size:12.5px;padding:18px}
+  .hist-clear{float:right;font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;opacity:.7}
+  .hist-clear:hover{opacity:1}
+  .disclaimer{margin-top:26px;text-align:center;font-size:11.5px;color:var(--ink-faint);line-height:1.8;border-top:1px solid var(--line-soft);padding-top:18px}
+  .disclaimer b{color:var(--ink-dim)}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">🫡</div>
+    <div class="titlebox">
+      <h1>六课斥候请假小助手</h1>
+      <p>AI 大模型驱动 · 为搭档编造合理可信的请假理由 · 一本正经地胡说八道</p>
+    </div>
+    <div class="badge">
+      <span class="chip live mono">ON DUTY</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="panel">
+      <div class="panel-head">
+        <span class="dot"></span>
+        <h2>请假需求录入</h2>
+        <span class="tag mono">INPUT</span>
+      </div>
+      <div class="panel-body">
+        <div class="field">
+          <label>请假天数 <span class="req">*</span><span class="hint">必填</span></label>
+          <div class="seg" id="daySeg">
+            <button data-day="0.5">半天</button>
+            <button data-day="1">1天</button>
+            <button data-day="2">2天</button>
+            <button data-day="3">3天</button>
+            <button data-day="5">5天+</button>
+          </div>
+          <input type="number" id="dayInput" min="0.5" max="30" step="0.5" placeholder="或直接输入天数，如 1.5" style="margin-top:8px">
+        </div>
+        <div class="row">
+          <div class="field"><label>开始日期</label><input type="date" id="startDate"></div>
+          <div class="field">
+            <label>紧急程度</label>
+            <select id="urgency">
+              <option value="random">随机/不限</option>
+              <option value="紧急">紧急（需当天请）</option>
+              <option value="一般">一般</option>
+              <option value="不急">不急（可提前安排）</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>倾向理由类型</label>
+          <select id="typePref">
+            <option value="random">随机（斥候自选最佳）</option>
+            <option value="病假">病假</option>
+            <option value="事假">事假</option>
+            <option value="家庭">家庭事务</option>
+            <option value="突发">突发状况</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>真实目的 <span class="hint">绝不会出现在理由中（铁律）</span></label>
+          <input type="text" id="realPurpose" placeholder="如：旅游、看演唱会、漫展、爬山…">
+        </div>
+        <div class="field">
+          <label>特殊要求 <span class="hint">可选</span></label>
+          <textarea id="extra" placeholder="如：领导比较严、要避开某天…"></textarea>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" id="genBtn">🎯 生成理由</button>
+          <button class="btn btn-ghost" id="randBtn" title="随机天数+类型">🎲</button>
+        </div>
+        <div class="ai-status" id="aiStatus">AI 大模型 · 开箱即用</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <span class="dot teal"></span>
+        <h2>斥候情报回执</h2>
+        <span class="tag mono">OUTPUT</span>
+      </div>
+      <div class="panel-body" id="output">
+        <div class="out-empty">
+          <div class="ico">🕵️</div>
+          <p>搭档，把请假需求填好，点「生成理由」即可收到 AI 情报回执。</p>
+          <div class="egg-hint">
+            听说斥候藏了几个彩蛋，试试输入这些暗号：<br>
+            <code>我想上班</code> &nbsp; <code>课长要抓你回去上班了</code> &nbsp; <code>比个小猫耳朵吧</code>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel hist-panel">
+    <div class="panel-head">
+      <span class="dot teal"></span>
+      <h2>历史请假回执</h2>
+      <span class="tag mono">LOCAL · 本地存储</span>
+      <button class="hist-clear" id="clearHist">清空</button>
+    </div>
+    <div class="panel-body"><div class="hist-list" id="histList"></div></div>
+  </section>
+
+  <div class="disclaimer">
+    <b>⚠️ 使用须知：</b>本工具为娱乐向助手，由 AI 大模型生成理由，旨在让请假这件麻烦事变得轻松有趣。理由仅供构思参考，请勿用于伪造病历、证件等违法行为。<br>
+    正规请假请如实填写，遇到真正需要休息的身体状况，请诚实告知。六课斥候祝搭档劳逸结合、平安归来。🫡
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   六课斥候请假小助手 v3.0 · 纯 AI 版（无内置库）
+   理由由后端 /api/generate 调用大模型生成，检查机制在前后端双重执行
+   ============================================================ */
+const $ = id => document.getElementById(id);
+
+// 彩蛋（全部保留，优先级最高，前端精确匹配）
+const EASTER = {
+  '我想上班': { icon: '😏', text: '真的不想摸鱼了吗搭档？', cls: '' },
+  '课长要抓你回去上班了': { icon: '🏃', text: '（已逃跑）', cls: 'esc', closeAfter: true },
+  '比个小猫耳朵吧': { icon: '🐱', text: '喵 ~', cls: '' },
+};
+
+const daySeg = $('daySeg');
+const dayInput = $('dayInput');
+let selectedDay = null;
+
+daySeg.addEventListener('click', e => {
+  const b = e.target.closest('button[data-day]');
+  if (!b) return;
+  daySeg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  selectedDay = parseFloat(b.dataset.day);
+  dayInput.value = selectedDay;
+});
+dayInput.addEventListener('input', () => {
+  daySeg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+  selectedDay = parseFloat(dayInput.value) || null;
+});
+$('startDate').valueAsDate = new Date();
+
+$('randBtn').addEventListener('click', () => {
+  const days = [0.5,1,1,2,2,3,5][Math.floor(Math.random()*7)];
+  dayInput.value = days; selectedDay = days;
+  daySeg.querySelectorAll('button').forEach(x => x.classList.toggle('on', parseFloat(x.dataset.day) === days));
+  const types = ['random','病假','事假','家庭','突发'];
+  $('typePref').value = types[Math.floor(Math.random()*types.length)];
+  const urg = ['random','紧急','一般','不急'];
+  $('urgency').value = urg[Math.floor(Math.random()*urg.length)];
+  generate();
+});
+$('genBtn').addEventListener('click', generate);
+
+// 健康检查：显示后端 Key 是否就绪
+fetch('/api/health').then(r=>r.json()).then(d=>{
+  if(d && d.ok){
+    $('aiStatus').textContent = 'AI 大模型 · ' + (d.model||'') + ' · ' + (d.hasKey ? '已就绪' : '服务端未配置 Key');
+    if(!d.hasKey) $('aiStatus').style.color = 'var(--amber)';
+  }
+}).catch(()=>{ $('aiStatus').textContent='AI 后端未连接'; $('aiStatus').style.color='var(--red)' });
+
+async function generate() {
+  const raw = (dayInput.value || '').trim();
+  // 彩蛋精确匹配（优先级最高，全部保留）
+  const eggSource = ($('realPurpose').value + ' ' + $('extra').value).trim();
+  for (const key in EASTER) {
+    if (eggSource === key || raw === key || $('extra').value.trim() === key || $('realPurpose').value.trim() === key) {
+      renderEgg(EASTER[key]);
+      return;
+    }
+  }
+  if (!raw) { flashInput(dayInput); return; }
+  const days = parseFloat(raw);
+  if (isNaN(days) || days <= 0) { flashInput(dayInput); return; }
+
+  const opts = {
+    days, urgency: $('urgency').value, typePref: $('typePref').value,
+    realPurpose: $('realPurpose').value, extra: $('extra').value,
+  };
+
+  // 只调 AI，无内置库回退
+  renderLoading('🕵️ 斥候正在联络 AI 大模型情报网…');
+  $('genBtn').disabled = true;
+  try {
+    const resp = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(opts),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || data.error) {
+      renderError(data.error || ('请求失败 HTTP ' + resp.status));
+      return;
+    }
+    // 前端二次检查机制：真实目的铁律校验（defense-in-depth，后端已过滤）
+    if (!checkRealPurpose(data, opts.realPurpose)) {
+      renderError('AI 理由泄漏了真实目的，已拦截（铁律）。请点「换一批」重试');
+      return;
+    }
+    renderResult(data, opts);
+  } catch (e) {
+    renderError('网络或后端错误：' + (e.message || e) + '。请确认 AI 后端服务已启动。');
+  } finally {
+    $('genBtn').disabled = false;
+  }
+}
+
+// 检查机制（前端二次）：真实目的不得出现在结果中
+function checkRealPurpose(data, realPurpose) {
+  const rp = (realPurpose || '').trim();
+  if (!rp) return true;
+  const all = ((data.recommended && data.recommended.content) || '') + ' ' +
+    ((data.alternatives || []).map(a => a.content || '').join(' '));
+  const low = all.toLowerCase();
+  return !rp.split(/[\s,，、]+/).filter(k => k.length >= 2).some(k => low.includes(k.toLowerCase()));
+}
+
+function flashInput(el) {
+  el.style.borderColor = 'var(--red)';
+  el.style.boxShadow = '0 0 0 3px rgba(255,107,107,.15)';
+  el.focus();
+  setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 1200);
+}
+
+function renderLoading(msg) {
+  $('output').innerHTML = '<div class="out-empty"><div class="ico" style="animation:spin 1.4s linear infinite;display:inline-block">🕵️</div><p>' + msg + '</p></div>';
+}
+
+function renderError(msg) {
+  $('output').innerHTML = '<div class="err-card"><div class="ico">⚠️</div><p>' + escapeHtml(msg) + '</p>' +
+    '<div class="out-actions" style="justify-content:center"><button class="btn btn-primary" onclick="generate()">🔄 换一批</button></div></div>';
+}
+
+function renderEgg(egg) {
+  $('output').innerHTML = '<div class="egg-panel"><div class="big">' + egg.icon + '</div><div class="txt ' + egg.cls + '">' + egg.text + '</div></div>';
+  if (egg.closeAfter) {
+    setTimeout(() => {
+      document.documentElement.style.transition = 'opacity .7s ease, transform .7s ease, filter .7s ease';
+      document.documentElement.style.filter = 'blur(4px)';
+      document.body.style.transition = 'opacity .7s ease, transform .7s ease';
+      document.body.style.opacity = '0';
+      document.body.style.transform = 'translateX(-40px) scale(.97)';
+      setTimeout(() => {
+        window.open('', '_self'); window.close();
+        const ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;background:linear-gradient(180deg,#0e1420,#070b13);z-index:99999;display:flex;place-items:center;justify-content:center;color:#6b7c9c;font-size:14px;flex-direction:column;gap:18px;opacity:0;transition:opacity .5s ease';
+        ov.innerHTML = '<div style="font-size:56px">🏃💨</div><div style="font-size:16px;color:#9fb0cc;font-weight:600">搭档已成功撤离</div><div style="font-size:12px">（浏览器拒绝自动关闭，请手动关掉此页配合演出）</div>';
+        document.documentElement.style.filter = 'none';
+        document.body.style.opacity = '1'; document.body.style.transform = 'none';
+        document.body.appendChild(ov);
+        requestAnimationFrame(() => { ov.style.opacity = '1'; });
+      }, 700);
+    }, 1000);
+  }
+}
+
+function renderResult({ recommended, alts }, opts) {
+  const typeClass = { 病假: 'sick', 事假: 'personal', 家庭: 'family', 突发: 'emergency' }[recommended.type] || 'personal';
+  const fullText = '那就这个理由吧搭档，【推荐理由】' + recommended.content;
+  const html =
+    '<div class="rec-card"><div class="rec-head">' +
+    '<span class="label mono">RECOMMENDED</span>' +
+    '<span class="type-tag ' + typeClass + '">' + (recommended.icon || '') + ' ' + recommended.type + '</span>' +
+    '<span class="cred">可信度 <b style="color:var(--ink)">' + (recommended.cred || '-') + '</b><span class="cred-bar"><span class="cred-fill" style="width:0%"></span></span></span>' +
+    '<span class="src-badge ai">✨ AI 生成</span>' +
+    '</div><div class="rec-body" id="recBody"></div></div>' +
+    (alts && alts.length ? '<div class="alt-title mono">备选理由 · ALTERNATIVES</div><div class="alt-list">' +
+      alts.map((a, i) => {
+        const ac = { 病假: 'sick', 事假: 'personal', 家庭: 'family', 突发: 'emergency' }[a.type] || 'personal';
+        return '<div class="alt-item"><span class="alt-num">' + (i + 1) + '</span><span class="type-tag ' + ac + '">' + (a.icon || '') + ' ' + a.type + '</span><span class="alt-text"><b>' + escapeHtml(a.content) + '</b></span></div>';
+      }).join('') + '</div>' : '') +
+    '<div class="notes"><h3>📋 配套注意事项</h3>' +
+    '<div class="note-row"><div class="k">证明材料</div><div class="v">' + escapeHtml(recommended.doc || '') + '</div></div>' +
+    '<div class="note-row"><div class="k">应对领导追问</div><div class="v">「' + escapeHtml(recommended.boss || '') + '」</div></div>' +
+    '<div class="note-row"><div class="k">提前准备</div><div class="v">' + escapeHtml(recommended.prep || '') + '</div></div></div>' +
+    '<div class="out-actions"><button class="btn btn-primary" id="copyBtn">📋 复制全文</button><button class="btn btn-ghost" id="regenBtn">🔄 换一批</button><button class="btn btn-ghost" id="copyReasonBtn">仅复制理由</button><span id="copyTip"></span></div>';
+  $('output').innerHTML = html;
+
+  typewriter($('recBody'), fullText, () => {
+    const fill = document.querySelector('.cred-fill');
+    if (fill) fill.style.width = (recommended.cred || 0) + '%';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const txt = fullText + '\n\n备选理由：\n' + (alts || []).map((a, i) => (i + 1) + '. ' + a.content).join('\n') +
+      '\n\n注意事项：\n· 证明材料：' + (recommended.doc || '') + '\n· 应对领导追问：' + (recommended.boss || '') + '\n· 提前准备：' + (recommended.prep || '');
+    copy(txt, 'copyTip');
+  });
+  $('copyReasonBtn').addEventListener('click', () => copy(recommended.content, 'copyTip'));
+  $('regenBtn').addEventListener('click', generate);
+  saveHistory({ recommended, alts, opts, time: Date.now() });
+}
+
+function typewriter(el, text, done) {
+  el.innerHTML = '<span class="typed-cursor"></span>';
+  let i = 0; const speed = 18;
+  const tick = () => {
+    if (i <= text.length) { el.innerHTML = escapeHtml(text.slice(0, i)) + '<span class="typed-cursor"></span>'; i++; setTimeout(tick, speed); }
+    else { el.innerHTML = escapeHtml(text); done && done(); }
+  };
+  tick();
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function copy(text, tipId) {
+  const tip = $(tipId);
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => showCopied(tip)).catch(() => fallbackCopy(text, tip));
+  else fallbackCopy(text, tip);
+}
+function fallbackCopy(text, tip) {
+  const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); showCopied(tip); } catch (e) {}
+  document.body.removeChild(ta);
+}
+function showCopied(tip) { if (!tip) return; tip.innerHTML = '✓ 已复制'; setTimeout(() => tip.innerHTML = '', 1600); }
+
+/* 历史记录 */
+const HKEY = 'scout_leave_history';
+function loadHistory() { try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch (e) { return []; } }
+function saveHistory(item) {
+  const list = loadHistory(); list.unshift(item); if (list.length > 20) list.length = 20;
+  localStorage.setItem(HKEY, JSON.stringify(list)); renderHistory();
+}
+function renderHistory() {
+  const list = loadHistory(); const el = $('histList');
+  if (!list.length) { el.innerHTML = '<div class="hist-empty">还没有回执记录，生成的理由会自动保存在这里（仅本地）。</div>'; return; }
+  el.innerHTML = list.map((it, i) =>
+    '<div class="hist-item" data-i="' + i + '"><div class="ht"><b>' + (it.recommended.icon || '') + ' ' + it.recommended.type + ' · ' + it.opts.days + '天</b><span>' + fmtTime(it.time) + '</span></div>' +
+    '<div class="hc">' + escapeHtml(it.recommended.content) + '</div></div>').join('');
+  el.querySelectorAll('.hist-item').forEach(node => {
+    node.addEventListener('click', () => {
+      const it = list[parseInt(node.dataset.i)];
+      renderResult({ recommended: it.recommended, alts: it.alts }, it.opts);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+}
+function fmtTime(t) { const d = new Date(t); const p = n => String(n).padStart(2, '0'); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+$('clearHist').addEventListener('click', () => { if (confirm('确定清空所有历史回执吗？')) { localStorage.removeItem(HKEY); renderHistory(); } });
+renderHistory();
+</script>
+</body>
+</html>

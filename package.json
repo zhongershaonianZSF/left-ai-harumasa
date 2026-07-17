@@ -1,0 +1,13 @@
+{
+  "name": "scout-leave-ai-server",
+  "version": "3.0.0",
+  "description": "六课斥候请假小助手 · AI 后端代理（零依赖，原生 Node）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
