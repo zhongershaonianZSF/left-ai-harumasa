@@ -22,6 +22,7 @@ const url = require('url');
 // ---------- 配置（环境变量优先，支持 .env）----------
 loadDotEnv();
 const PORT = process.env.PORT || 3000;
+app.listen(port, '0.0.0.0', () => console.log(`listening on ${port}`));
 const API_KEY = process.env.AI_API_KEY || '';
 const ENDPOINT = process.env.AI_ENDPOINT || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
 const MODEL = process.env.AI_MODEL || 'qwen-plus';
